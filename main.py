@@ -5,7 +5,7 @@ import torch
 import cv2
 from tracker import *
 
-cap = cv2.VideoCapture('images/rishiSquat2.mp4')
+cap = cv2.VideoCapture('images/mikeSquat.mp4')
 
 # Create tracker object
 tracker = EuclideanDistTracker()
