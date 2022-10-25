@@ -2,10 +2,11 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
 import cv2
 from tracker import *
 
-cap = cv2.VideoCapture('images/mikeSquat.mp4')
+cap = cv2.VideoCapture('data/skateClip.mp4')
 
 # Create tracker object
 tracker = EuclideanDistTracker()

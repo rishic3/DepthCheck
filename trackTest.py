@@ -23,7 +23,7 @@ motionTime = []
 dataFrame = panda.DataFrame(columns=["Initial", "Final"])
 
 # starting the webCam to capture the video using cv2 module
-video = cv2.VideoCapture('images/rishiSquat2.mp4')
+video = cv2.VideoCapture('data/skateClip.mp4')
 
 # using infinite loop to capture the frames from the video
 while True:
