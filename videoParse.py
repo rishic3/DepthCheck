@@ -7,7 +7,8 @@ from src.body import Body
 from src.hand import Hand
 
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/skateClip.mp4')
+cap = cv2.VideoCapture('data/mikeSquat.MOV')
+
 
 def get_saving_frames_durations(cap, saving_fps):
     # returns the list of durations where to save the frames
@@ -17,11 +18,13 @@ def get_saving_frames_durations(cap, saving_fps):
         s.append(i)
     return s
 
+
 fps = cap.get(cv2.CAP_PROP_FPS)
 savingFPS = 10
 saving_frames_durations = get_saving_frames_durations(cap, savingFPS)
 
-out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
+out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS,
+                      (int(cap.get(3)), int(cap.get(4))))
 
 count = 0
 while True:

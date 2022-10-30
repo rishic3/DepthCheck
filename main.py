@@ -6,7 +6,7 @@ import torch
 import cv2
 from tracker import *
 
-cap = cv2.VideoCapture('data/skateClip.mp4')
+cap = cv2.VideoCapture('data/mikeSquat.MOV')
 
 # Create tracker object
 tracker = EuclideanDistTracker()
@@ -16,7 +16,10 @@ object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=4
 
 while True:
     ret, frame = cap.read()
-    height, width, _ = frame.shape
+
+    if frame is not None:
+        height, width, _ = frame.shape
+    else: break
 
     # Extract Region of interest
     roi = frame

@@ -33,7 +33,7 @@ while True:
 
     canvas = util.draw_handpose(canvas, all_hand_peaks)
 
-    cv2.imshow('demo', canvas)#一个窗口用以显示原视频
+    cv2.imshow('demo', canvas)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 

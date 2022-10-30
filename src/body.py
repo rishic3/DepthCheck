@@ -11,6 +11,7 @@ from torchvision import transforms
 from src import util
 from src.model import bodypose_model
 
+
 class Body(object):
     def __init__(self, model_path):
         self.model = bodypose_model()
@@ -81,7 +82,8 @@ class Body(object):
             map_down[:, :-1] = one_heatmap[:, 1:]
 
             peaks_binary = np.logical_and.reduce(
-                (one_heatmap >= map_left, one_heatmap >= map_right, one_heatmap >= map_up, one_heatmap >= map_down, one_heatmap > thre1))
+                (one_heatmap >= map_left, one_heatmap >= map_right, one_heatmap >= map_up, one_heatmap >= map_down,
+                 one_heatmap > thre1))
             peaks = list(zip(np.nonzero(peaks_binary)[1], np.nonzero(peaks_binary)[0]))  # note reverse
             peaks_with_score = [x + (map_ori[x[1], x[0]],) for x in peaks]
             peak_id = range(peak_counter, peak_counter + len(peaks))
@@ -206,6 +208,7 @@ class Body(object):
         # subset: n*20 array, 0-17 is the index in candidate, 18 is the total score, 19 is the total parts
         # candidate: x, y, score, id
         return candidate, subset
+
 
 if __name__ == "__main__":
     body_estimation = Body('../model/body_pose_model.pth')
