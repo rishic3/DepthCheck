@@ -7,7 +7,7 @@ from src.body import Body
 from src.hand import Hand
 
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/rishiSquat2.mp4')
+cap = cv2.VideoCapture('data/mikeSquat.MOV')
 
 def get_saving_frames_durations(cap, saving_fps):
     # returns the list of durations where to save the frames
@@ -49,7 +49,11 @@ while True:
         candidate, subset = body_estimation(frame)
         canvas = util.draw_bodypose(canvas, candidate, subset)
 
-        index = int(subset[0][8])
+        try:
+            index = int(subset[0][8])
+        except IndexError:
+            count += 1
+            continue
         if index != -1:
             rHipCoords.append(candidate[index].tolist())
         index = int(subset[0][11])
@@ -116,5 +120,18 @@ minLKnee = lKneeYs[keyframe]
 
 print("Lowest Right Hip: ", minRHip, ", lowest right knee: ", minRKnee)
 print("Lowest Left Hip: ", minLHip, ", lowest left knee: ", minLKnee)
+
+print("\nDepth?")
+# Y coordinate 0 is TOP left of page --> higher number == physically lower
+if leftOnly:
+    if minLKnee < minLHip:
+        print("Depth, passed depth by", minLHip - minLKnee, "pixels")
+    else:
+        print("No depth, missed depth by", minLKnee - minLHip, "pixels")
+else:
+    if minRKnee < minRHip:
+        print("Depth, passed depth by", minRHip-minRKnee, "pixels")
+    else:
+        print("No depth, missed depth by", minRKnee-minRHip, "pixels")
 
 out.release()

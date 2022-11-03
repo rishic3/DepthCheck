@@ -9,7 +9,7 @@ body_estimation = Body('model/body_pose_model.pth')
 cap = cv2.VideoCapture('data/mikeSquat.MOV')
 
 
-img_1 = cv2.imread('images/basicSquat.jpeg')
+img_1 = cv2.imread('images/mTest.jpeg')
 candidate, subset = body_estimation(img_1)
 print(candidate)
 print(subset)
