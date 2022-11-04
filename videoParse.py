@@ -48,12 +48,14 @@ while True:
         canvas = copy.deepcopy(frame)
         candidate, subset = body_estimation(frame)
         canvas = util.draw_bodypose(canvas, candidate, subset)
+        #canvas = cv2.line(canvas, (12, 12), (100, 100), (255, 0, 0), 4)
 
         try:
             index = int(subset[0][8])
         except IndexError:
             count += 1
             continue
+        rKneeY = None
         if index != -1:
             rHipCoords.append(candidate[index].tolist())
         index = int(subset[0][11])
@@ -62,10 +64,13 @@ while True:
         index = int(subset[0][9])
         if index != -1:
             rKneeCoords.append(candidate[index].tolist())
+            rKneeY = candidate[index].tolist()[1]
         index = int(subset[0][12])
         if index != -1:
             lKneeCoords.append(candidate[index].tolist())
 
+        if rKneeY:
+            canvas = cv2.line(canvas, (0, int(rKneeY)), (int(frame.shape[0]), int(rKneeY)), (255, 0, 0), 4)
         out.write(canvas)
         try:
             saving_frames_durations.pop(0)
