@@ -56,6 +56,7 @@ while True:
             count += 1
             continue
         rKneeY = None
+        lKneeY = None
         if index != -1:
             rHipCoords.append(candidate[index].tolist())
         index = int(subset[0][11])
@@ -68,9 +69,11 @@ while True:
         index = int(subset[0][12])
         if index != -1:
             lKneeCoords.append(candidate[index].tolist())
-
+            lKneeY = candidate[index].tolist()[1]
         if rKneeY:
             canvas = cv2.line(canvas, (0, int(rKneeY)), (int(frame.shape[0]), int(rKneeY)), (255, 0, 0), 4)
+        elif lKneeY:
+            canvas = cv2.line(canvas, (0, int(lKneeY)), (int(frame.shape[0]), int(lKneeY)), (255, 0, 0), 4)
         out.write(canvas)
         try:
             saving_frames_durations.pop(0)
