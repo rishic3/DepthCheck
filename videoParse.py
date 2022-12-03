@@ -5,9 +5,19 @@ import numpy as np
 from src import util
 from src.body import Body
 from src.hand import Hand
+import time
+start_time = time.time()
+
+print("DepthPerception has been launched.")
 
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/mikeSquat.MOV')
+cap = cv2.VideoCapture('data/mansquat.mp4')
+
+checkHeight = 1
+height = float(input("Enter a height in cm, or type '"'none'"': "))
+if height == "none":
+    checkHeight = 0
+
 
 def get_saving_frames_durations(cap, saving_fps):
     # returns the list of durations where to save the frames
@@ -18,19 +28,21 @@ def get_saving_frames_durations(cap, saving_fps):
     return s
 
 fps = cap.get(cv2.CAP_PROP_FPS)
+
+#SET DESIRED FPS
 savingFPS = 5
 saving_frames_durations = get_saving_frames_durations(cap, savingFPS)
 
-out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
-
+out = cv2.VideoWriter('mansquatout.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
 count = 0
+pixelHeight = 0
 
 rHipCoords = []  #8
 lHipCoords = []  #11
 rKneeCoords = []  #9
 lKneeCoords = []  #12
 
-botFrame = None
+arrFrames = []
 
 while True:
     is_read, frame = cap.read()
@@ -38,6 +50,8 @@ while True:
         break
     frameSize = frame.shape
     frame_duration = count / fps
+
+    #frame = cv2.rotate(frame, cv2.ROTATE_180)
 
     try:
         closest_duration = saving_frames_durations[0]
@@ -66,12 +80,21 @@ while True:
         if index != -1:
             lKneeCoords.append(candidate[index].tolist())
 
+        if checkHeight:
+            miny = min(x[1] for x in candidate)
+            maxy = max(x[1] for x in candidate)
+            pixelHeight = abs(miny - maxy)
+            checkHeight = 0
+
+        arrFrames.append(canvas)
         out.write(canvas)
         try:
             saving_frames_durations.pop(0)
         except IndexError:
             pass
     count += 1
+
+out.release()
 
 '''
 print("Right Hip: Numfound ", len(rHipCoords))
@@ -97,16 +120,21 @@ if not (len(rHipCoords) == len(lHipCoords) == len(rKneeCoords) == len(lKneeCoord
 rHipYs = [coords[1] for coords in rHipCoords]
 lHipYs = [coords[1] for coords in lHipCoords]
 
+print(rHipYs)
+print(lHipYs)
+
 # origin of image is top left; lowest depth is max
 minRHip = max(rHipYs)
 minRIndex = rHipYs.index(minRHip)
 minLHip = max(lHipYs)
 minLIndex = lHipYs.index(minLHip)
 
+'''
 print("Right Hip Y coords: ", rHipYs)
 print("Left Hip Y coords: ", lHipYs)
 print("Lowest right hip coord: ", minRHip, " at frame ", minRIndex)
 print("Lowest left hip coord: ", minLHip, " at frame ", minLIndex)
+'''
 
 if not (minRIndex == minLIndex):
     rightOnly = True
@@ -121,17 +149,29 @@ minLKnee = lKneeYs[keyframe]
 print("Lowest Right Hip: ", minRHip, ", lowest right knee: ", minRKnee)
 print("Lowest Left Hip: ", minLHip, ", lowest left knee: ", minLKnee)
 
-print("\nDepth?")
+#cm per pixel:
+cmpp = height / pixelHeight
+
 # Y coordinate 0 is TOP left of page --> higher number == physically lower
 if leftOnly:
     if minLKnee < minLHip:
-        print("Depth, passed depth by", minLHip - minLKnee, "pixels")
+        print("DEPTH! passed depth by", (minLHip - minLKnee) * cmpp, "cm")
     else:
-        print("No depth, missed depth by", minLKnee - minLHip, "pixels")
+        print("NO DEPTH! missed depth by", (minLKnee - minLHip) * cmpp, "cm")
 else:
     if minRKnee < minRHip:
-        print("Depth, passed depth by", minRHip-minRKnee, "pixels")
+        print("DEPTH! passed depth by", (minRHip-minRKnee) * cmpp, "cm")
     else:
-        print("No depth, missed depth by", minRKnee-minRHip, "pixels")
+        print("NO DEPTH! missed depth by", (minRKnee - minRHip) * cmpp, "cm")
 
-out.release()
+print("\n")
+print("--- %s seconds ---" % (time.time() - start_time))
+
+keyCanvas = arrFrames[keyframe]
+plt.title('Deepest Frame')
+plt.axline((0, minRKnee), (keyCanvas.shape[1], minRKnee))
+plt.imshow(keyCanvas[:, :, [2, 1, 0]])
+plt.show()
+
+
+
