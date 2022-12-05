@@ -10,8 +10,10 @@ start_time = time.time()
 
 print("DepthPerception has been launched.")
 
+modelYOLOv3 = 'https://github.com/OlafenwaMoses/ImageAI/releases/download/1.0/yolo.h5'
+
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/mansquat.mp4')
+cap = cv2.VideoCapture('data/mansquat3.mp4')
 
 checkHeight = 1
 height = float(input("Enter a height in cm, or type '"'none'"': "))
@@ -33,7 +35,7 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 savingFPS = 5
 saving_frames_durations = get_saving_frames_durations(cap, savingFPS)
 
-out = cv2.VideoWriter('mansquatout.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
+out = cv2.VideoWriter('mansquat3out.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
 count = 0
 pixelHeight = 0
 
@@ -43,6 +45,8 @@ rKneeCoords = []  #9
 lKneeCoords = []  #12
 
 arrFrames = []
+
+
 
 while True:
     is_read, frame = cap.read()

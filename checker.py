@@ -9,7 +9,7 @@ body_estimation = Body('model/body_pose_model.pth')
 cap = cv2.VideoCapture('data/mikeSquat.MOV')
 
 
-img_1 = cv2.imread('images/rishiStanding.png')
+img_1 = cv2.imread('images/mansquat3.png')
 
 print("shape: ", img_1.shape)
 
@@ -22,6 +22,7 @@ print("index: ", index)
 print("coords of index: ", candidate[index].tolist())
 '''
 print("candidates: ", candidate)
+print("subset: ", subset)
 miny = min(x[1] for x in candidate)
 print("min y: ", miny)
 maxy = max(x[1] for x in candidate)
