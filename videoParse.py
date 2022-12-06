@@ -10,16 +10,14 @@ start_time = time.time()
 
 print("DepthPerception has been launched.")
 
-modelYOLOv3 = 'https://github.com/OlafenwaMoses/ImageAI/releases/download/1.0/yolo.h5'
-
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/mansquat3.mp4')
+cap = cv2.VideoCapture('data/rcmedlowangle2.mov')
 
-checkHeight = 1
-height = float(input("Enter a height in cm, or type '"'none'"': "))
-if height == "none":
-    checkHeight = 0
-
+checkHeight = 0
+height = input("Enter a height in cm, or type '"'none'"': ")
+if height != "none":
+    checkHeight = 1
+    height = float(height)
 
 def get_saving_frames_durations(cap, saving_fps):
     # returns the list of durations where to save the frames
@@ -35,7 +33,7 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 savingFPS = 5
 saving_frames_durations = get_saving_frames_durations(cap, savingFPS)
 
-out = cv2.VideoWriter('mansquat3out.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
+out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
 count = 0
 pixelHeight = 0
 
@@ -45,8 +43,6 @@ rKneeCoords = []  #9
 lKneeCoords = []  #12
 
 arrFrames = []
-
-
 
 while True:
     is_read, frame = cap.read()
@@ -154,7 +150,9 @@ print("Lowest Right Hip: ", minRHip, ", lowest right knee: ", minRKnee)
 print("Lowest Left Hip: ", minLHip, ", lowest left knee: ", minLKnee)
 
 #cm per pixel:
-cmpp = height / pixelHeight
+cmpp = 1
+if height != "none":
+    cmpp = height / pixelHeight
 
 # Y coordinate 0 is TOP left of page --> higher number == physically lower
 if leftOnly:

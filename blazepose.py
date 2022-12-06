@@ -3,14 +3,23 @@ import mediapipe as mp
 import numpy as np
 import ssl
 import matplotlib.pyplot as plt
-ssl._create_default_https_context = ssl._create_unverified_context
+import cv2
+import matplotlib.pyplot as plt
+import copy
+import numpy as np
+import math
+from src import util
+from src.body import Body
+from src.hand import Hand
+import time
 
+# Initialize mediapipe dependencies.
+ssl._create_default_https_context = ssl._create_unverified_context
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
-# For static images:
-IMAGE_FILES = ["images/rishimedlow2.png"]
+IMAGE_FILES = ["images/rishiSquat2.png"]
 BG_COLOR = (192, 192, 192) # gray
 with mp_pose.Pose(
     static_image_mode=True,
@@ -106,6 +115,13 @@ with mp_pose.Pose(
         ax.plot_surface(xx, yy, z)
         plt.show()
 
+    def computeDistance(pt, plane):
+        a, b, c, d = plane
+        x, y, z = pt
+        d = abs((a * x + b * y + c * z + d))
+        e = (math.sqrt(a * a + b * b + c * c))
+        return d / e
+
     plt3d = plt.figure()
     ax = plt3d.add_subplot(projection='3d')
     ax.scatter(xs, ys, zs)
@@ -114,8 +130,3 @@ with mp_pose.Pose(
     ax.plot([righthip.x, rightknee.x], [righthip.y, rightknee.y], [righthip.z, rightknee.z], color='blue')
     ax.plot([lefthip.x, leftknee.x], [lefthip.y, leftknee.y], [lefthip.z, leftknee.z], color='blue')
     plt.show()
-
-    #calcPlane(feetpts)
-
-
-    #ax.scatter3D(xdata, ydata, zdata)
