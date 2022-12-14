@@ -23,7 +23,9 @@ Input **180** for the model to compute depth discrepancies in real-world metrics
 
 ### Output
 
-The model will produce two plots and an output video.  
+The frameworks will print a depth classification, as well as the displacement from depth, to console.  
+
+The frameworks will also produce two plots and an output video.  
 The first plot will display the results of the Yolov3 detection, like so:  
 <br />
 <img src="https://user-images.githubusercontent.com/77904151/207735737-3111af0e-eb74-47e6-8fc8-1a0b0e71f9ee.png" width="300">  
@@ -38,6 +40,7 @@ If sideAngle.py is being used, the plot will also contain a line representing th
 <br />
 
 Both frameworks will also produce a file **output.mp4** containing the parsed frames, with pose annotations, combined into an output video:  
+<br />
 <img src="https://user-images.githubusercontent.com/77904151/207737334-5ba1014b-1f95-485e-a6bc-8f794022f58b.gif" width="300">  
 
 ### Files
