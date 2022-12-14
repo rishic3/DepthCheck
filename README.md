@@ -25,12 +25,15 @@ Input **180** for the model to compute depth discrepancies in real-world metrics
 
 The model will produce two plots and an output video.  
 The first plot will display the results of the Yolov3 detection, like so:  
+<br />
 <img src="https://user-images.githubusercontent.com/77904151/207735737-3111af0e-eb74-47e6-8fc8-1a0b0e71f9ee.png" width="300">  
 <br />
 The second plot will display the frame containing the deepest instance of the squat, like so:  
+<br />
 <img src="https://user-images.githubusercontent.com/77904151/207735719-7e3597f8-161e-42a9-99f9-5d23fd51eefc.png" width="300">  
 <br />
 If sideAngle.py is being used, the plot will also contain a line representing the depth threshold:  
+<br />
 <img src="https://user-images.githubusercontent.com/77904151/207735695-881ac193-2f4c-46c4-a315-19e9518c9eeb.png" width="300">  
 <br />
 
