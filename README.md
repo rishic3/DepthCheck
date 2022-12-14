@@ -19,7 +19,7 @@ or
     python main.py squatExample.mov
 
 The user will be prompted to optionally input a height for the subject in centimeters.  
-Input **180** for the model to compute depth discrepancies in real-world metrics, or type none.  
+Input **180** for the model to compute depth discrepancies in real-world metrics, or type **none**.  
 
 helperFunctions.py contains helper functions used by both primary frameworks.  
 blazePoseDemo.py contains a demo implementation for the BlazePose estimation model.  
