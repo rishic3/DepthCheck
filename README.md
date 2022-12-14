@@ -25,7 +25,7 @@ Input **180** for the model to compute depth discrepancies in real-world metrics
 
 The model will produce two plots and an output video.  
 The first plot will display the results of the Yolov3 detection, like so:  
-![alt text](https://github.com/rishic3/DepthCheck/tree/main/images/detectionExample.png)
+![alt text](https://github.com/rishic3/DepthCheck/tree/main/images/detectionExample.png?raw=true)
 
 ### Files
 
