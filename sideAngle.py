@@ -15,7 +15,7 @@ start_time = time.time()
 print("DepthPerception has been launched.")
 
 body_estimation = Body('model/body_pose_model.pth')
-cap = cv2.VideoCapture('data/rcmedlowangle2.mov')
+cap = cv2.VideoCapture('squatExample.mov')
 
 # Optionally receive an input height for distance and velocity measurements.
 checkHeight = 0

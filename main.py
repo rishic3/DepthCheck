@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import mediapipe as mp
 import ssl
 import numpy as np
+import sys
 import time
 import mxnet as mx
 from gluoncv import model_zoo, utils
@@ -20,7 +21,11 @@ mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 BG_COLOR = (192, 192, 192)
 
-cap = cv2.VideoCapture('data/rclowangle2.mov')
+# Default squat example.
+cap = cv2.VideoCapture('squatExample.mov')
+filename = sys.argv[-1]
+if filename != 'main.py':
+    cap = cv2.VideoCapture(filename)
 
 # Optionally receive an input height for distance and velocity measurements.
 checkHeight = 0
@@ -107,13 +112,13 @@ while True:
             class_ids, scores, bounding_boxes = detect(network, norm_image)
 
             # Plot detected bounding boxes:
-            '''
+
             ax = utils.viz.plot_bbox(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), bounding_boxes[0], scores[0], class_ids[0], class_names=network.classes)
             fig = plt.gcf()
             fig.set_size_inches(14, 14)
             plt.title('Detected subject(s):')
             plt.show()
-            '''
+
 
             thresh = 0.7
             num_people, person_boxes = count_object(network, class_ids, scores, bounding_boxes, "person", threshold=thresh)
