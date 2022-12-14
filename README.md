@@ -1,52 +1,30 @@
-## pytorch-openpose
+## DepthPerception
 
+#### Install Requirements
 
-
-
-#### Install Requriements
-
-Create a python 3.7 environement, eg:
-
-    conda create -n pytorch-openpose python=3.7
-    conda activate pytorch-openpose
-
-Install pytorch by following the quick start guide here (use pip) https://download.pytorch.org/whl/torch_stable.html
-
-Install other requirements with pip
+Install models and other dependencies with pip
 
     pip install -r requirements.txt
 
 #### Run the Demo
 
-Run:
+A demo video can be found in the global directory and is named squatExample.mov. 
 
-    python demo_camera.py
+sideAngle.py and main.py can be run on this file like so:
 
-to run a demo with a feed from your webcam or run
+    python sideAngle.py squatExample.mov
 
-    python demo.py
+or
 
-to use a image from the images folder or run 
+    python main.py squatExample.mov
 
-    python demo_video.py <video-file>
+The user will be prompted to optionally input a height for the subject in centimeters. 
+Input 180 to output depth discrepancies in real-world metrics, or type none. 
 
-to process a video file (requires [ffmpeg-python][ffmpeg]).
+helperFunctions.py contains helper functions used by both primary frameworks. 
+blazePoseDemo.py contains a demo implementation for the BlazePose estimation model.
+yolov3Demo.py contains a demo implementation for the Yolov3 object detection model. 
 
-[ffmpeg]: https://pypi.org/project/ffmpeg-python/
-
-### Todo list
-- [x] convert caffemodel to pytorch.
-- [x] Body Pose Estimation.
-- [x] Hand Pose Estimation.
-- [ ] Performance test.
-- [ ] Speed up.
-
-### Demo
-#### Skeleton
-
-![](images/skeleton.jpg)
-#### Body Pose Estimation
-
-![](images/body_preview.jpg)
+More video samples can be found in the data directory. 
 
 pytorch implementation of [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) including **Body and Hand Pose Estimation**, and the pytorch model is directly converted from [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) caffemodel by [caffemodel2pytorch](https://github.com/vadimkantorov/caffemodel2pytorch). 
