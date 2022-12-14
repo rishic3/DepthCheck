@@ -38,7 +38,7 @@ If sideAngle.py is being used, the plot will also contain a line representing th
 <br />
 
 Both frameworks will also produce a file **output.mp4** containing the parsed frames, with pose annotations, combined into an output video:  
-
+<img src="https://user-images.githubusercontent.com/77904151/207737334-5ba1014b-1f95-485e-a6bc-8f794022f58b.gif" width="300">  
 
 ### Files
 
