@@ -1,17 +1,10 @@
-import cv2
 import mediapipe as mp
-import numpy as np
 import ssl
 import matplotlib.pyplot as plt
 import cv2
-import matplotlib.pyplot as plt
-import copy
 import numpy as np
 import math
-from src import util
-from src.body import Body
-from src.hand import Hand
-import time
+
 
 # Initialize mediapipe dependencies.
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -19,7 +12,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
-IMAGE_FILES = ["images/rishiSquat2.png"]
+IMAGE_FILES = ["images/kevsquatang1standing.png"]
 BG_COLOR = (192, 192, 192) # gray
 with mp_pose.Pose(
     static_image_mode=True,
@@ -40,10 +33,6 @@ with mp_pose.Pose(
     # Draw segmentation on the image.
     # To improve segmentation around boundaries, consider applying a joint
     # bilateral filter to "results.segmentation_mask" with "image".
-    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.1
-    bg_image = np.zeros(image.shape, dtype=np.uint8)
-    bg_image[:] = BG_COLOR
-    annotated_image = np.where(condition, annotated_image, bg_image)
 
     mp_drawing.draw_landmarks(
         annotated_image,
@@ -54,6 +43,8 @@ with mp_pose.Pose(
     # Plot pose world landmarks.
     mp_drawing.plot_landmarks(
         results.pose_world_landmarks, mp_pose.POSE_CONNECTIONS)
+
+    print(results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP])
 
     rightfoot = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
     rightheel = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]

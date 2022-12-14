@@ -1,14 +1,13 @@
 import cv2
+import math
 import matplotlib.pyplot as plt
-from src.body import Body
 import mediapipe as mp
 import ssl
-import copy
 import numpy as np
-from src import util
 import time
-
-
+import mxnet as mx
+from gluoncv import model_zoo, utils
+from helperFunctions import calculatePlane, computeDistance, transform_image, detect, count_object
 
 # Launch framework.
 start_time = time.time()
@@ -19,120 +18,128 @@ ssl._create_default_https_context = ssl._create_unverified_context
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
+BG_COLOR = (192, 192, 192)
 
-# Depth plane calculation helper functions.
-def calculatePlane(pts):
-    p1, p2, p3 = pts
-    x1, y1, z1 = p1
-    x2, y2, z2 = p2
-    x3, y3, z3 = p3
-    a1 = x2 - x1
-    b1 = y2 - y1
-    c1 = z2 - z1
-    a2 = x3 - x1
-    b2 = y3 - y1
-    c2 = z3 - z1
-    a = b1 * c2 - b2 * c1
-    b = a2 * c1 - a1 * c2
-    c = a1 * b2 - b1 * a2
-    d = (- a * x1 - b * y1 - c * z1)
-    return [a, b, c, d]
+cap = cv2.VideoCapture('data/rclowangle2.mov')
 
-def plotPlane(pts, ax):
-    p0, p1, p2 = pts
-    x0, y0, z0 = p0
-    x1, y1, z1 = p1
-    x2, y2, z2 = p2
-    ux, uy, uz = u = [x1 - x0, y1 - y0, z1 - z0]
-    vx, vy, vz = v = [x2 - x0, y2 - y0, z2 - z0]
-    u_cross_v = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]
-    point = np.array(p0)
-    normal = np.array(u_cross_v)
-    d = -point.dot(normal)
-    xx, yy = np.meshgrid(range(-1), range(1))
-    z = (-normal[0] * xx - normal[1] * yy - d) * 1. / normal[2]
-    ax.plot_surface(xx, yy, z)
-    plt.show()
+# Optionally receive an input height for distance and velocity measurements.
+checkHeight = 0
+height = input("Enter a height in cm, or type '"'none'"': ")
+if height != "none":
+    checkHeight = 1
+    height = float(height)
 
-
-cap = cv2.VideoCapture('data/rcmedlowangle2.mov')
-
-
+# Returns the list of durations where to save the frames.
 def get_saving_frames_durations(cap, saving_fps):
-    # returns the list of durations where to save the frames
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     for i in np.arange(0, clip_duration, 1 / saving_fps):
         s.append(i)
     return s
 
+# Set desired FPS at which to parse video.
 fps = cap.get(cv2.CAP_PROP_FPS)
-#SET DESIRED FPS
 savingFPS = 5
 saving_frames_durations = get_saving_frames_durations(cap, savingFPS)
-out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
-count = 0
 
-rHipCoords = []  #8
-lHipCoords = []  #11
-rKneeCoords = []  #9
-lKneeCoords = []  #12
+# Output path for video with pose estimations.
+out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), savingFPS, (int(cap.get(3)), int(cap.get(4))))
+
+# Variables to store information across frames.
+count = 0
+pixelHeight = -1
+firstFrame = 1
+detectSizeY = -1
+frameSizeY = -1
+resultWorldCoords = []
+resultPoseCoords = []
+
+rHipCoords = []
+lHipCoords = []
+rKneeCoords = []
+lKneeCoords = []
 arrFrames = []
 
 while True:
     is_read, frame = cap.read()
     if not is_read:
         break
-    frameSize = frame.shape
+    _, frameSizeY, _ = frame.shape
     frame_duration = count / fps
 
-    #frame = cv2.rotate(frame, cv2.ROTATE_180)
+    # UNCOMMENT FOR .mov files: .mov video types must be flipped prior to processing.
+    frame = cv2.rotate(frame, cv2.ROTATE_180)
 
     try:
         closest_duration = saving_frames_durations[0]
     except IndexError:
-        # list is empty, all duration frames were saved
         break
     if frame_duration >= closest_duration:
-        BG_COLOR = (192, 192, 192)  # gray
+
+        # Compute pose estimation.
         with mp_pose.Pose(
                 static_image_mode=True,
                 model_complexity=2,
                 enable_segmentation=True,
                 min_detection_confidence=0.5) as pose:
-
-            image = frame
-            image_height, image_width, _ = image.shape
-            # Convert the BGR image to RGB before processing.
-            results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            image_height, image_width, _ = frame.shape
+            #results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            results = pose.process(frame)
             if not results.pose_landmarks:
                 continue
-            annotated_image = image.copy()
-            # Draw pose landmarks on the image.
-            # Draw segmentation on the image.
-            # To improve segmentation around boundaries, consider applying a joint
-            # bilateral filter to "results.segmentation_mask" with "image".
-            condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.1
-            bg_image = np.zeros(image.shape, dtype=np.uint8)
-            bg_image[:] = BG_COLOR
-            annotated_image = np.where(condition, annotated_image, bg_image)
-            '''
+            annotated_image = frame.copy()
             mp_drawing.draw_landmarks(
                 annotated_image,
                 results.pose_landmarks,
                 mp_pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+            resultPoseCoords.append(results.pose_landmarks)
+            resultWorldCoords.append(results.pose_world_landmarks)
+
+        # Estimate height of subject with bounding box detection.
+        if firstFrame and checkHeight:
+            network = model_zoo.get_model('yolo3_darknet53_coco', pretrained=True)
+            norm_image, img = transform_image(mx.nd.array(frame))
+            xdim, ydim, _ = img.shape
+            detectSizeY = ydim
+            cx = xdim / 2
+            cy = ydim / 2
+            class_ids, scores, bounding_boxes = detect(network, norm_image)
+
+            # Plot detected bounding boxes:
             '''
-            rKneeCoords.append(results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE])
-            lKneeCoords.append(results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE])
-            rHipCoords.append(results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP])
-            lHipCoords.append(results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP])
-            arrFrames.append(annotated_image)
-            # Plot pose world landmarks.
+            ax = utils.viz.plot_bbox(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), bounding_boxes[0], scores[0], class_ids[0], class_names=network.classes)
+            fig = plt.gcf()
+            fig.set_size_inches(14, 14)
+            plt.title('Detected subject(s):')
+            plt.show()
             '''
-            mp_drawing.plot_landmarks(results.pose_world_landmarks, mp_pose.POSE_CONNECTIONS)
-            '''
-            out.write(annotated_image)
+
+            thresh = 0.7
+            num_people, person_boxes = count_object(network, class_ids, scores, bounding_boxes, "person", threshold=thresh)
+            if num_people == 0:
+                print("0 subjects detected.")
+            if num_people == 1:
+                print("1 subject detected with confidence threshold ", thresh, ". Analyzing subject's squat.")
+                for b in person_boxes:
+                    xmin, ymin, xmax, ymax = [int(x) for x in b]
+                    pixelHeight = (ymax - ymin)
+
+            # If multiple subjects are detected, analyze the center most subject.
+            if num_people > 1:
+                print(num_people, " subjects detected with confidence threshold ", thresh, ". Analyzing the most central subject.")
+                mindist = math.inf
+                for b in person_boxes:
+                    xmin, ymin, xmax, ymax = [int(x) for x in b]
+                    curdist = math.dist([xmin + (xmax - xmin)/2, ymin + (ymax - ymin)/2], [cx, cy])
+                    if curdist < mindist:
+                        mindist = curdist
+                        pixelHeight = (ymax-ymin)
+
+            firstFrame = 0
+
+        arrFrames.append(annotated_image)
+        out.write(annotated_image)
         try:
             saving_frames_durations.pop(0)
         except IndexError:
@@ -141,126 +148,137 @@ while True:
 
 out.release()
 
-
-
-    rightfoot = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
-    rightheel = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
-    leftfoot = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
-    leftheel = results.pose_world_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
-
-
-
-
-
-    critpts = [rightfoot, rightheel, leftfoot, leftheel, rightknee, leftknee, righthip, lefthip]
-    xs = []
-    ys = []
-    zs = []
-    for critpt in critpts:
-        xs.append(critpt.x)
-        ys.append(critpt.y)
-        zs.append(critpt.z)
-
-    rfootcoords = [rightfoot.x, rightfoot.y, rightfoot.z]
-    rheelcoords = [rightheel.x, rightheel.y, rightheel.z]
-    lfootcoords = [leftfoot.x, leftfoot.y, leftfoot.z]
-
-    feetpts = [rfootcoords, rheelcoords, lfootcoords]
-
-    print(feetpts)
-
-
-
-    plt3d = plt.figure()
-    ax = plt3d.add_subplot(projection='3d')
-    ax.scatter(xs, ys, zs)
-    ax.plot([rightfoot.x, rightheel.x], [rightfoot.y, rightheel.y], [rightfoot.z, rightheel.z], color='black')
-    ax.plot([leftfoot.x, leftheel.x], [leftfoot.y, leftheel.y], [leftfoot.z, leftheel.z], color='black')
-    ax.plot([righthip.x, rightknee.x], [righthip.y, rightknee.y], [righthip.z, rightknee.z], color='blue')
-    ax.plot([lefthip.x, leftknee.x], [lefthip.y, leftknee.y], [lefthip.z, leftknee.z], color='blue')
-    plt.show()
-
-#TODO: end blazepose
-
-
-'''
-print("Right Hip: Numfound ", len(rHipCoords))
-print("Left Hip: Numfound: ", len(lHipCoords))
-print("Right Knee: Numfound: ", len(rKneeCoords))
-print("Left Knee: Numfound: ", len(lKneeCoords))
-'''
-
-rightOnly = False
 leftOnly = False
+rightOnly = False
+useImg = False
 
-if not (len(rHipCoords) == len(lHipCoords) == len(rKneeCoords) == len(lKneeCoords)):
-    if len(rHipCoords) == len(rKneeCoords):
+# Identification and analysis of deepest frame.
+minRHip = resultPoseCoords[0].landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+minRKnee = resultPoseCoords[0].landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+minRHipIndex = -1
+minLHip = resultPoseCoords[0].landmark[mp_pose.PoseLandmark.LEFT_HIP]
+minLKnee = resultPoseCoords[0].landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+minLHipIndex = -1
+
+# Identify frame with lowest detected hip joint.
+for i, res in enumerate(resultPoseCoords):
+    if res.landmark[mp_pose.PoseLandmark.LEFT_HIP].y > minLHip.y:
+        minLHip = res.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+        minLKnee = res.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+        minLHipIndex = i
+    if res.landmark[mp_pose.PoseLandmark.RIGHT_HIP].y > minRHip.y:
+        minRHip = res.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+        minRKnee = res.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+        minRHipIndex = i
+
+# If deepest hip indices do not align, only analyze the hip joint with better visibility.
+if minRHipIndex != minLHipIndex:
+    if minRHip.visibility > minLHip.visibility:
         rightOnly = True
-    elif len(lHipCoords) == len(lKneeCoords):
-        leftOnly = True
     else:
-        print("barfed: inconsistent number of joints detected across frames")
-        exit(1)
+        leftOnly = True
+print("Deepest frame detected at ", minLHipIndex, ". Analyzing.")
 
-#TODO: code leftonly and rightonly cases
+assert len(resultPoseCoords) == len(resultWorldCoords), f"Pose coords do not align with world coords."
 
-rHipYs = [coords[1] for coords in rHipCoords]
-lHipYs = [coords[1] for coords in lHipCoords]
+# Extract key landmarks from world coordinates of deepest frame.
+worldResults = resultWorldCoords[minLHipIndex]
+rightfoot = worldResults.landmark[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+rightheel = worldResults.landmark[mp_pose.PoseLandmark.RIGHT_HEEL]
+leftfoot = worldResults.landmark[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+leftheel = worldResults.landmark[mp_pose.PoseLandmark.LEFT_HEEL]
+rightknee = worldResults.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+leftknee = worldResults.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+righthip = worldResults.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+lefthip = worldResults.landmark[mp_pose.PoseLandmark.LEFT_HIP]
 
-print(rHipYs)
-print(lHipYs)
+# If feet are occluded, classify depth strictly based on image coordinates.
+if rightfoot.visibility < 0.75 or leftfoot.visibility < 0.75:
+    useImg = True
 
-# origin of image is top left; lowest depth is max
-minRHip = max(rHipYs)
-minRIndex = rHipYs.index(minRHip)
-minLHip = max(lHipYs)
-minLIndex = lHipYs.index(minLHip)
+# Compute base plane using feet landmarks.
+rfootcoords = [rightfoot.x, rightfoot.y, rightfoot.z]
+rheelcoords = [rightheel.x, rightheel.y, rightheel.z]
+lfootcoords = [leftfoot.x, leftfoot.y, leftfoot.z]
+lheelcoords = [leftheel.x, leftheel.y, leftheel.z]
+feetpts = [rfootcoords, rheelcoords, lfootcoords]
 
-'''
-print("Right Hip Y coords: ", rHipYs)
-print("Left Hip Y coords: ", lHipYs)
-print("Lowest right hip coord: ", minRHip, " at frame ", minRIndex)
-print("Lowest left hip coord: ", minLHip, " at frame ", minLIndex)
-'''
+basePlane = calculatePlane([rfootcoords, rheelcoords, lfootcoords]) if leftheel.visibility > rightheel.visibility else calculatePlane([rfootcoords, lfootcoords, lheelcoords])
+rHiptoBase = computeDistance([righthip.x, righthip.y, righthip.z], basePlane)
+lHiptoBase = computeDistance([lefthip.x, lefthip.y, lefthip.z], basePlane)
+rKneetoBase = computeDistance([rightknee.x, rightknee.y, rightknee.z], basePlane)
+lKneetoBase = computeDistance([leftknee.x, leftknee.y, leftknee.z], basePlane)
 
-if not (minRIndex == minLIndex):
-    rightOnly = True
+print("hip distance to base: ", rHiptoBase, lHiptoBase, ", knee distance to base: ", rKneetoBase, lKneetoBase)
 
-keyframe = minRIndex
-rKneeYs = [coords[1] for coords in rKneeCoords]
-lKneeYs = [coords[1] for coords in lKneeCoords]
-
-minRKnee = rKneeYs[keyframe]
-minLKnee = lKneeYs[keyframe]
-
-print("Lowest Right Hip: ", minRHip, ", lowest right knee: ", minRKnee)
-print("Lowest Left Hip: ", minLHip, ", lowest left knee: ", minLKnee)
-
-#cm per pixel:
-cmpp = 1
+# Compute cm per pixel for distance measurements.
+cmpp = -1
 if height != "none":
+    pixelHeight *= (frameSizeY / detectSizeY)
     cmpp = height / pixelHeight
 
-# Y coordinate 0 is TOP left of page --> higher number == physically lower
+# Mediapipe outputs normalized image coordinates; recover the original coordinates.
+unnormedLHip = minLHip.y * frameSizeY
+unnormedRHip = minRHip.y * frameSizeY
+unnormedLKnee = minLKnee.y * frameSizeY
+unnormedRKnee = minRKnee.y * frameSizeY
+
+
+# Determine depth classification based on distances of hip and knee to base plane.
 if leftOnly:
-    if minLKnee < minLHip:
-        print("DEPTH! passed depth by", (minLHip - minLKnee) * cmpp, "cm")
+    if lHiptoBase < lKneetoBase:
+        if pixelHeight != -1:
+            print("Classification: DEPTH! Passed depth by", (unnormedLHip - unnormedLKnee) * cmpp, "cm.")
+        else:
+            print("Classification: DEPTH!")
     else:
-        print("NO DEPTH! missed depth by", (minLKnee - minLHip) * cmpp, "cm")
+        if pixelHeight != -1:
+            print("Classification: NOT DEPTH! Missed depth by", (unnormedLKnee - unnormedLHip) * cmpp, "cm")
+        else:
+            print("Classification: NOT DEPTH!")
+elif rightOnly:
+    if rHiptoBase < rKneetoBase:
+        if pixelHeight != -1:
+            print("Classification: DEPTH! Passed depth by", (unnormedRHip - unnormedRKnee) * cmpp, "cm.")
+        else:
+            print("Classification: DEPTH!")
+    else:
+        if pixelHeight != -1:
+            print("Classification: NOT DEPTH! Missed depth by", (unnormedRKnee - unnormedRHip) * cmpp, "cm")
+        else:
+            print("Classification: NOT DEPTH!")
 else:
-    if minRKnee < minRHip:
-        print("DEPTH! passed depth by", (minRHip-minRKnee) * cmpp, "cm")
+    if lHiptoBase < lKneetoBase and rHiptoBase < rKneetoBase:
+        if pixelHeight != -1:
+            avgDist = (unnormedLHip - unnormedLKnee + unnormedRHip - unnormedRKnee) / 2
+            print("Classification: DEPTH! Passed depth by", avgDist * cmpp, "cm.")
+        else:
+            print("Classification: DEPTH!")
     else:
-        print("NO DEPTH! missed depth by", (minRKnee - minRHip) * cmpp, "cm")
+        if pixelHeight != -1:
+            avgDist = (unnormedLHip - unnormedLKnee + unnormedRHip - unnormedRKnee) / 2
+            print("Classification: NOT DEPTH! Missed depth by", avgDist * cmpp, "cm")
+        else:
+            print("Classification: NOT DEPTH!")
+
+if useImg:
+    if minLHip.y > minLKnee.y:
+        if pixelHeight != -1:
+            print("Classification: DEPTH! Passed depth by", (unnormedLHip - unnormedLKnee) * cmpp, "cm.")
+        else:
+            print("Classification: DEPTH!")
+    else:
+        if pixelHeight != -1:
+            print("Classification: NOT DEPTH! Missed depth by", (unnormedLKnee - unnormedLHip) * cmpp, "cm")
+        else:
+            print("Classification: NOT DEPTH!")
 
 print("\n")
 print("--- %s seconds ---" % (time.time() - start_time))
 
-keyCanvas = arrFrames[keyframe]
+keyCanvas = arrFrames[minLHipIndex]
 plt.title('Deepest Frame')
-plt.axline((0, minRKnee), (keyCanvas.shape[1], minRKnee))
 plt.imshow(keyCanvas[:, :, [2, 1, 0]])
 plt.show()
-
 
 
