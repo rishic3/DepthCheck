@@ -12,11 +12,11 @@ A demo video can be found in the global directory and is named squatExample.mov.
 
 sideAngle.py and main.py can be run on this file like so:
 
-    python sideAngle.py squatExample.mov
+    python3 sideAngle.py squatExample.mov
 
 or
 
-    python main.py squatExample.mov
+    python3 main.py squatExample.mov
 
 The user will be prompted to optionally input a height for the subject in centimeters.  
 Input **180** for the model to compute depth discrepancies in real-world metrics, or type **none**.  
