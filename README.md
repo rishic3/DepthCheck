@@ -54,6 +54,8 @@ Image samples used to test the BlazePose and Yolov3 demos are stored in the **im
 
 ### References
 
-pytorch implementation of [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) including **Body and Hand Pose Estimation**, and the pytorch model is directly converted from [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) caffemodel by [caffemodel2pytorch](https://github.com/vadimkantorov/caffemodel2pytorch).
+Pyorch implementation of [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) including **Body and Hand Pose Estimation**, and the Pytorch model is directly converted from [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) caffemodel by [caffemodel2pytorch](https://github.com/vadimkantorov/caffemodel2pytorch).
 
-Google's MediaPipe [pose estimation](https://google.github.io/mediapipe/solutions/pose.html) was imported and used according to their [documentation](https://google.github.io/mediapipe/solutions/pose.html)
+Google's MediaPipe [pose estimation](https://google.github.io/mediapipe/solutions/pose.html) was imported and used according to their [documentation](https://google.github.io/mediapipe/solutions/pose.html).
+
+Yolov3 object detection was imported from [gluoncv](https://cv.gluon.ai/contents.html). The source code can be found [here](https://cv.gluon.ai/_modules/gluoncv/model_zoo/yolo/yolo3.html).
