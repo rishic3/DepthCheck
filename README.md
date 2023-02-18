@@ -1,5 +1,11 @@
 ## DepthPerception
 
+### The Framework:
+
+DepthPerception is a deep learning framework to assess squat depth in videos. It aims to automate the judging process in competitive powerlifting settings, and encourage proper depth and posture for non-competitive lifters.
+
+The framework takes an input squat video. It applies Yolov3 to identify the lifter in the video, and employs MediaPipe Blazepose to apply a pose estimation across frames. It then extracts the estimated 3D coordinates to determine the knee and hip planes, computing a depth classification. A more detailed description of the 
+
 #### Install Requirements
 
 Install models and other dependencies with pip
@@ -21,7 +27,7 @@ or
 The user will be prompted to optionally input a height for the subject in centimeters.  
 Input **180** (the height of the subject in the example video) for the model to compute depth discrepancies in real-world metrics, or type **none**.  
 
-### Output
+#### Output
 
 The frameworks will print a depth classification, as well as the displacement from depth, to console.  
 
